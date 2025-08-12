@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hemari AI Affiliate</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Affiliate Portal💖</h1>
+    <p>Continue with Google to join or sign in</p>
+    <button id="googleSignInBtn" class="google-btn">Continue with Google</button>
+    <div id="affiliateInfo" style="margin-top:20px; display:none;">
+        <h3>Your Referral Code:</h3>
+        <p id="referralCode" style="color:#ff4da6; font-weight:bold;"></p>
+        <h3>Users Signed Up via Your Link:</h3>
+        <p id="userCount" style="color:#ff4da6; font-weight:bold;"></p>
+    </div>
+</div>
+
+<script src="affiliate.js"></script>
+</body>
+</html>
