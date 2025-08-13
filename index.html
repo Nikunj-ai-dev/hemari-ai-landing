@@ -1,80 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hemari AI</title>
-<style>
-    body {
-        margin: 0;
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #000000, #1a001a);
-        color: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        text-align: center;
-        padding: 20px;
-    }
-    .container {
-        max-width: 500px;
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 30px;
-        border-radius: 20px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 0 20px rgba(255, 0, 102, 0.7);
-    }
-    h1 {
-        font-size: 2.5rem;
-        color: #ff4da6;
-        margin-bottom: 10px;
-    }
-    p {
-        font-size: 1rem;
-        color: #f2f2f2;
-        margin-bottom: 20px;
-    }
-    .google-btn {
-        display: inline-block;
-        background: #ff1a75;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 50px;
-        font-size: 1rem;
-        font-weight: bold;
-        text-decoration: none;
-        transition: background 0.3s ease, transform 0.2s ease;
-    }
-    .google-btn:hover {
-        background: #ff4da6;
-        transform: scale(1.05);
-    }
-    .footer {
-        font-size: 0.8rem;
-        margin-top: 20px;
-        color: #ccc;
-    }
-    @media (max-width: 600px) {
-        h1 {
-            font-size: 2rem;
-        }
-        p {
-            font-size: 0.9rem;
-        }
-    }
-</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Hemari AI — Join</title>
+  <link rel="stylesheet" href="style.css"/>
+  <!-- Firebase v10 (modular) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Hemari AI💖</h1>
-        <p>Your AI girlfriend💖</p>
-        <p>Sign in with Google below to start chatting⭐</p>
-        <a href="#" class="google-btn">Sign in with Google</a>
-        <div class="footer">
-            &copy; 2025 Hemari AI. All rights reserved.
-        </div>
+  <main class="container">
+    <h1>Hemari AI 💖</h1>
+    <p class="sub">Your AI girlfriend</p>
+
+    <p class="small">Have a code from an affiliate? Enter it below.</p>
+    <div class="form">
+      <input id="refInput" class="input" maxlength="6" inputmode="numeric"
+             placeholder="Enter 6-digit referral code" />
+      <button id="joinBtn" class="btn">Continue with Google</button>
     </div>
+
+    <button class="btn secondary" id="goAffiliate">Sign in / Sign up as Affiliate</button>
+    <footer>© 2025 Hemari AI. All rights reserved.</footer>
+  </main>
+
+  <script>
+    // ----  Firebase config  ----
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "hemari.firebaseapp.com",
+      projectId: "hemari",
+      storageBucket: "hemari.firebasestorage.app",
+      messagingSenderId: "1050131542351",
+      appId: "1:1050131542351:web:629e977e097ea4d291953a",
+      measurementId: "G-73WF2B7X79"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    // Fill input if ?ref=XXXXXX is present
+    const urlParams = new URLSearchParams(location.search);
+    const refFromUrl = (urlParams.get('ref')||'').toUpperCase();
+    const refInput = document.getElementById('refInput');
+    if(refFromUrl && /^\w{6}$/.test(refFromUrl)) refInput.value = refFromUrl;
+
+    // Simple 6-char alnum validator (digits allowed). If you want strictly digits: /^\d{6}$/
+    const isValidCode = c => /^\w{6}$/.test((c||'').trim());
+
+    // Continue with Google: create user (if first time), and attribute referral
+    const TELEGRAM_URL = "https://t.me/cute_hemari_bot";
+
+    document.getElementById('joinBtn').addEventListener('click', async () => {
+      const code = refInput.value.trim().toUpperCase();
+      if(!isValidCode(code)){ alert("Please enter a valid 6-digit code."); return; }
+
+      // Save locally (handy for later)
+      localStorage.setItem('hemari_ref', code);
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try{
+        const { user, additionalUserInfo } = await auth.signInWithPopup(provider);
+
+        // 1) Ensure users collection has this user
+        const uref = db.collection('users').doc(user.uid);
+        const usnap = await uref.get();
+
+        // 2) On first signup only, increment affiliate's userCount if affiliate exists
+        if(!usnap.exists){
+          // try to find affiliate by referralCode
+          const q = await db.collection('affiliates').where('referralCode', '==', code).limit(1).get();
+          if(!q.empty){
+            const affDoc = q.docs[0].ref;
+            await db.runTransaction(async (tx)=>{
+              const a = await tx.get(affDoc);
+              const curr = a.data().userCount || 0;
+              tx.update(affDoc, { userCount: curr + 1 });
+            });
+          }
+          // add user record
+          await uref.set({
+            email: user.email,
+            name: user.displayName || "",
+            referredBy: code,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        // 3) Redirect to Telegram bot
+        location.href = TELEGRAM_URL;
+
+      }catch(err){
+        console.error(err);
+        // Fallback to redirect flow on popup blockers
+        try{
+          await auth.signInWithRedirect(provider);
+        }catch(e){ alert("Sign-in failed. Please try again."); }
+      }
+    });
+
+    document.getElementById('goAffiliate').addEventListener('click', ()=>{
+      location.href = 'affiliate.html';
+    });
+  </script>
 </body>
 </html>
+
