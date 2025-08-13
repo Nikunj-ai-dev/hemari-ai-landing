@@ -1,7 +1,7 @@
 // auth.js
 const GOOGLE_AUTHZ = "https://accounts.google.com/o/oauth2/v2/auth";
-const CLIENT_ID = "<YOUR_WEB_CLIENT_ID>.apps.googleusercontent.com"; // Replace with your web OAuth client ID
-const REDIRECT_URI = "https://<your-domain>/oauth2/callback";       // Must match exactly in Google Cloud Console
+const CLIENT_ID = "<675426505609- mg055jb8c590c6tsl7th5sij8a2ulf52.ap ps.googleusercontent.com 0>.apps.googleusercontent.com"; // Replace with your web OAuth client ID
+const REDIRECT_URI = "https://t.me/cute_hemari_bot/oauth2/callback";       // Must match exactly in Google Cloud Console
 const SCOPES = ["openid", "email", "profile"].join(" ");              // Add extra scopes if needed
 
 // --- Helper to encode to Base64url (RFC 4648 §5)
