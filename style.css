@@ -1,6 +1,52 @@
+/* Reset */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
 body{
-  padding: 25px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% 30%, rgba(255,0,120,.18), transparent 60%), #0b0610;
+  color:#fff; display:flex; align-items:center; justify-content:center; padding:20px;
 }
-.title {
-	color: #5C6AC4;
+.container{
+  width:100%; max-width: 560px; background: rgba(255,255,255,.04);
+  border-radius: 20px; padding: 28px; backdrop-filter: blur(10px);
+  box-shadow: 0 0 40px rgba(255,0,120,.25);
+  text-align:center;
 }
+h1{font-size:2rem; color:#ff4da6; margin-bottom:8px}
+.sub{color:#ffd6e7; opacity:.9; margin-bottom:20px;}
+
+/* Form */
+.form{
+  display:flex; gap:10px; margin:18px 0; flex-wrap:wrap; justify-content:center
+}
+.input{
+  flex:1 1 180px; min-width:200px; max-width:280px;
+  padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06); color:#fff; outline:none;
+}
+.input::placeholder{color:#cda9b8}
+.btn{
+  border:none; cursor:pointer; border-radius:999px; padding:12px 18px; font-weight:600;
+  background:#ff2b8f; color:#fff; transition:.2s transform, .2s filter; white-space:nowrap;
+}
+.btn:hover{filter:brightness(1.1); transform:translateY(-1px)}
+.btn.secondary{background:#2a2231}
+.small{font-size:.85rem; color:#cfcad6; margin-top:10px}
+
+.panel{
+  display:grid; gap:14px; text-align:left; margin-top:16px;
+  background: rgba(255,255,255,.04); padding:16px; border-radius:14px;
+}
+.row{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.code{font-size:1.6rem; font-weight:800; letter-spacing:.12em; color:#ff7abf}
+.stat{font-size:1.1rem}
+.copy{cursor:pointer; font-size:.9rem; border:1px solid rgba(255,255,255,.15); padding:8px 12px; border-radius:10px}
+.link{word-break:break-all; color:#ffd6e7; opacity:.9}
+footer{margin-top:18px; font-size:.8rem; color:#c9b5c0; opacity:.8}
+
+/* Mobile tweaks */
+@media (max-width:480px){
+  h1{font-size:1.6rem}
+  .code{font-size:1.4rem}
+}
+
