@@ -1,27 +1,171 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Hemari AI Affiliate</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Hemari AI — Affiliate</title>
+  <link rel="stylesheet" href="style.css"/>
+  <!-- Firebase v10 (modular compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
-<div class="container">
-    <h1>Affiliate Portal💖</h1>
-    <p>Continue with Google to join or sign in</p>
-    <button id="googleSignInBtn" class="google-btn">Continue with Google</button>
-    <div id="affiliateInfo" style="margin-top:20px; display:none;">
-        <h3>Your Referral Code:</h3>
-        <p id="referralCode" style="color:#ff4da6; font-weight:bold;"></p>
-        <h3>Users Signed Up via Your Link:</h3>
-        <p id="userCount" style="color:#ff4da6; font-weight:bold;"></p>
-    </div>
-</div>
+  <main class="container" id="card">
+    <h1>Affiliate Portal 💖</h1>
+    <p class="sub">Share your 6-digit code. Earn when users join.</p>
 
-<script src="affiliate.js"></script>
+    <!-- Sign-in area -->
+    <div id="authArea">
+      <button id="affSignIn" class="btn">Continue with Google</button>
+      <p class="small">You’ll be signed up automatically if you’re new.</p>
+    </div>
+
+    <!-- Dashboard (hidden until signed in) -->
+    <section id="dash" style="display:none">
+      <div class="panel">
+        <div class="row">
+          <div>
+            <div class="small">Your referral code</div>
+            <div id="refCode" class="code">------</div>
+          </div>
+          <button id="copyBtn" class="copy">Copy</button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="small">Share link</div>
+            <div id="shareLink" class="link"></div>
+          </div>
+          <button id="shareBtn" class="copy">Share</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <div class="stat">Users signed in via your code</div>
+          <div id="count" class="code" style="letter-spacing:.06em">0</div>
+        </div>
+      </div>
+
+      <button id="signOut" class="btn secondary" style="margin-top:8px">Sign out</button>
+    </section>
+
+    <footer>© 2025 Hemari AI</footer>
+  </main>
+
+  <script>
+    // ----  Firebase config  ----
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "hemari.firebaseapp.com",
+      projectId: "hemari",
+      storageBucket: "hemari.firebasestorage.app",
+      messagingSenderId: "1050131542351",
+      appId: "1:1050131542351:web:629e977e097ea4d291953a",
+      measurementId: "G-73WF2B7X79"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
+
+    const els = {
+      authArea: document.getElementById('authArea'),
+      dash:     document.getElementById('dash'),
+      refCode:  document.getElementById('refCode'),
+      count:    document.getElementById('count'),
+      shareLink:document.getElementById('shareLink'),
+      copyBtn:  document.getElementById('copyBtn'),
+      shareBtn: document.getElementById('shareBtn'),
+    };
+
+    // Generate a **unique** 6-digit (numbers only). Retries until unused.
+    async function generateUniqueCode(){
+      const gen = () => Math.floor(100000 + Math.random()*900000).toString();
+      let code = gen();
+      while(!(await isCodeFree(code))) code = gen();
+      return code;
+    }
+    async function isCodeFree(code){
+      const snap = await db.collection('affiliates').where('referralCode','==',code).limit(1).get();
+      return snap.empty;
+    }
+
+    function buildShareLink(code){
+      return `https://hemariai.netlify.app/?ref=${code}`;
+    }
+
+    // Show dashboard with current data
+    async function showDashboard(user){
+      const docRef = db.collection('affiliates').doc(user.uid);
+      let doc = await docRef.get();
+
+      // Auto-signup on first login
+      if(!doc.exists){
+        const code = await generateUniqueCode();
+        await docRef.set({
+          email: user.email,
+          name: user.displayName || "",
+          referralCode: code,
+          userCount: 0,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        doc = await docRef.get();
+      }
+
+      const data = doc.data();
+      const code = data.referralCode;
+      els.refCode.textContent = code;
+      els.count.textContent   = data.userCount || 0;
+      els.shareLink.textContent = buildShareLink(code);
+
+      els.authArea.style.display = 'none';
+      els.dash.style.display = 'block';
+
+      // Copy / share handlers
+      els.copyBtn.onclick = async () => {
+        await navigator.clipboard.writeText(code);
+        els.copyBtn.textContent = "Copied!";
+        setTimeout(()=> els.copyBtn.textContent="Copy", 1200);
+      };
+      els.shareBtn.onclick = async () => {
+        const text = `Join Hemari AI with my code ${code}: ${buildShareLink(code)}`;
+        if (navigator.share) {
+          try{ await navigator.share({title:"Hemari AI", text, url:buildShareLink(code)});}catch{}
+        } else {
+          await navigator.clipboard.writeText(text);
+          els.shareBtn.textContent = "Copied link!";
+          setTimeout(()=> els.shareBtn.textContent="Share", 1200);
+        }
+      };
+
+      // Live updates to count
+      docRef.onSnapshot(s => {
+        const d = s.data();
+        els.count.textContent = d?.userCount ?? 0;
+      });
+    }
+
+    // Button: sign in with Google
+    document.getElementById('affSignIn').addEventListener('click', async ()=>{
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try{
+        const { user } = await auth.signInWithPopup(provider);
+        showDashboard(user);
+      }catch(err){
+        console.error(err);
+        try{ await auth.signInWithRedirect(provider); }catch(e){}
+      }
+    });
+
+    // Auto show if already logged in
+    auth.onAuthStateChanged(u => { if(u) showDashboard(u); });
+
+    // Sign out
+    document.getElementById('signOut').addEventListener('click', async ()=>{
+      await auth.signOut();
+      location.reload();
+    });
+  </script>
 </body>
 </html>
+
